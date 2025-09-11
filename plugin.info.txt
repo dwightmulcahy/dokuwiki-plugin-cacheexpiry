@@ -1,0 +1,6 @@
+base   cacheexpiry
+author dWiGhT Mulcahy
+email  dWiGhT.Codes@gmail.com
+name   Cache Expiry Control
+desc   Control DokuWiki cache expiry per page with REFRESH markers and namespace defaults, optionally showing the next refresh inline.
+url    https://www.dokuwiki.org/plugin:cacheexpiry
