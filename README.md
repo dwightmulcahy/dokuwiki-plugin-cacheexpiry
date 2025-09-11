@@ -1,7 +1,3 @@
-Here’s a complete `README.md` you can drop into the plugin:
-
----
-
 # Cache Expiry (cacheexpiry)
 
 Control **DokuWiki render cache** per page using simple `REFRESH` markers and optional **per-namespace defaults**. The plugin also **shows the next refresh time inline** (syntax-based rendering), and respects your DokuWiki **server timezone**.
