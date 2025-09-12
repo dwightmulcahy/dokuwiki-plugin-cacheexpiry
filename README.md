@@ -1,4 +1,15 @@
-# Cache Expiry (cacheexpiry)
+# Cache Expiry (cacheexpiry) Plugin for DokuWiki
+
+[![License](https://img.shields.io/github/license/dwightmulcahy/dokuwiki-plugin-cacheexpiry?style=flat-square)](LICENSE)
+[![DokuWiki](https://img.shields.io/badge/DokuWiki-compatible-blue?style=flat-square)](https://www.dokuwiki.org/)
+[![PR Check](https://github.com/dwightmulcahy/dokuwiki-plugin-cacheexpiry/actions/workflows/pr-check.yml/badge.svg)](https://github.com/dwightmulcahy/dokuwiki-plugin-cacheexpiry/actions/workflows/pr-check.yml)
+<br>
+[![Latest Release](https://img.shields.io/github/v/release/dwightmulcahy/dokuwiki-plugin-cacheexpiry?style=flat-square)](https://github.com/dwightmulcahy/dokuwiki-plugin-cacheexpiry/releases)
+[![GitHub commits](https://badgen.net/github/commits/dwightmulcahy/dokuwiki-plugin-cacheexpiry/main)](https://github.com/dwightmulcahy/dokuwiki-plugin-cacheexpiry/commits/main)
+[![Issues](https://img.shields.io/github/issues/dwightmulcahy/dokuwiki-plugin-cacheexpiry?style=flat-square)](https://github.com/dwightmulcahy/dokuwiki-plugin-cacheexpiry/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/dwightmulcahy/dokuwiki-plugin-cacheexpiry?style=flat-square)](https://github.com/dwightmulcahy/dokuwiki-plugin-cacheexpiry/pulls)
+
+## Description
 
 Control **DokuWiki render cache** per page using simple `REFRESH` markers and optional **per-namespace defaults**. The plugin also **shows the next refresh time inline** (syntax-based rendering).
 
