@@ -1,8 +1,13 @@
 # Cache Expiry (cacheexpiry)
 
-Control **DokuWiki render cache** per page using simple `REFRESH` markers and optional **per-namespace defaults**. The plugin also **shows the next refresh time inline** (syntax-based rendering), and respects your DokuWiki **server timezone**.
+Control **DokuWiki render cache** per page using simple `REFRESH` markers and optional **per-namespace defaults**. The plugin also **shows the next refresh time inline** (syntax-based rendering).
 
-* Supported markers: `~~REFRESH-HOURLY~~`, `~~REFRESH-DAILY~~`, `~~REFRESH-WEEKLY~~`, `~~REFRESH-MINUTES(n)~~`
+* Supported markers: 
+    * `~~REFRESH-MINUTES(n)~~`
+    * `~~REFRESH-HOURLY~~`
+    * `~~REFRESH-DAILY~~`
+    * `~~REFRESH-WEEKLY~~`
+
 
 ---
 

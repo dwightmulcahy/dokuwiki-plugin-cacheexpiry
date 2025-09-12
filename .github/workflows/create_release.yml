@@ -1,0 +1,174 @@
+name: Build DokuWiki Plugin ZIP and Changelog on version tag (i.e., v1.0.2)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    env:
+      INCLUDE_FILES: |
+        conf/
+        lang/
+        LICENSE
+        plugin.info.txt
+        syntax.php
+        action.php
+        helper.php
+        README.md
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed for tags
+
+      - name: Extract plugin name from repo name
+        id: extract_plugin_name
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="${GITHUB_REPOSITORY##*/}"
+          prefix="dokuwiki-plugin-"
+          if [[ "$repo" == "$prefix"* ]]; then
+            plugin_name="${repo#$prefix}"
+          else
+            plugin_name="$repo"
+          fi
+          echo "PLUGIN_NAME=$plugin_name" >> "$GITHUB_ENV"
+          echo "TAG_NAME=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Install git-cliff
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSL https://github.com/orhun/git-cliff/releases/download/v2.10.0/git-cliff-2.10.0-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+          sudo mv git-cliff-2.10.0/git-cliff /usr/local/bin/git-cliff
+          git-cliff --version
+
+      - name: Generate CHANGELOG.md
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Pick config (repo's cliff.toml if present, else a strict fallback)
+          if [[ -f cliff.toml ]]; then
+            echo "Using repo cliff.toml for ${TAG_NAME}"
+            cliff_config="cliff.toml"
+          else
+            echo "Using fallback cliff config for ${TAG_NAME}"
+            cat >/tmp/_cliff.toml <<'EOF'
+          [changelog]
+          header = "# Changelog"
+          trim = true
+
+          [git]
+          conventional_commits = true
+          filter_commits = true
+          # Only tags like v1.2.3 or v1.2.3-rc1
+          tag_pattern = "^v\\d+\\.\\d+\\.\\d+(?:-[A-Za-z0-9\\.]+)?$"
+          topo_order = false
+          EOF
+            cliff_config="/tmp/_cliff.toml"
+          fi
+
+          # Always generate changelog for the pushed tag only.
+          CURRENT_TAG="${TAG_NAME}"
+          git-cliff --config "$cliff_config" --tag "$CURRENT_TAG" --output CHANGELOG.md
+
+      - name: Verify plugin.info.txt exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f plugin.info.txt ]]; then
+            echo "::error title=Missing plugin.info.txt::plugin.info.txt is required at repo root."
+            exit 1
+          fi
+
+      - name: Build release ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE="build/stage"
+          OUTDIR="build"
+          mkdir -p "$STAGE" "$OUTDIR"
+
+          DEST="$STAGE/${PLUGIN_NAME}"
+          rm -rf "$DEST"
+          mkdir -p "$DEST"
+
+          while IFS= read -r item; do
+            [[ -z "${item// }" ]] && continue
+            src="${item%/}"
+            if [[ -e "$src" ]]; then
+              echo "Adding $src"
+              rsync -a "$src" "$DEST"/
+            else
+              echo "Skipping missing $item"
+            fi
+          done <<< "${INCLUDE_FILES}"
+
+          echo "Staged tree:"
+          find "$DEST" -maxdepth 2 -print | sed "s|$DEST|.|"
+
+          # Normalize plugin.info.txt date to today's America/Chicago date
+          if [[ -f "$DEST/plugin.info.txt" ]]; then
+            today=$(TZ=America/Chicago date +'%Y-%m-%d')
+            tmp="$DEST/plugin.info.txt.tmp"
+            { sed '1s/^\xEF\xBB\xBF//' "$DEST/plugin.info.txt" || cat "$DEST/plugin.info.txt"; } > "$tmp"
+            awk -v today="$today" '
+              BEGIN { OFS="\t" }
+              /^[[:space:]]*date([[:space:]]|$)/ { print "date", today; next }
+              { print $0 }
+            ' "$tmp" > "$DEST/plugin.info.txt"
+            rm -f "$tmp"
+          fi
+
+          ZIP_FILE="${OUTDIR}/${PLUGIN_NAME}-${TAG_NAME}.zip"
+          rm -f "$ZIP_FILE"
+          (cd "$STAGE" && zip -r -q "../${PLUGIN_NAME}-${TAG_NAME}.zip" "${PLUGIN_NAME}")
+
+          cp CHANGELOG.md "$OUTDIR"/
+          (cd "$OUTDIR" && sha256sum "${PLUGIN_NAME}-${TAG_NAME}.zip" > "${PLUGIN_NAME}-${TAG_NAME}.zip.sha256")
+
+          echo "ZIP_FILE=$ZIP_FILE" >> "$GITHUB_ENV"
+
+      - name: Verify ZIP directory structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Verifying contents of $ZIP_FILE..."
+          unzip -l "$ZIP_FILE" >/tmp/_ziplist.txt
+          cat /tmp/_ziplist.txt
+
+          echo "Checking required directories and files..."
+          grep -q "${PLUGIN_NAME}/conf/"            /tmp/_ziplist.txt || { echo "::error::Missing conf/ directory"; exit 1; }
+          grep -q "${PLUGIN_NAME}/lang/"            /tmp/_ziplist.txt || { echo "::error::Missing lang/ directory"; exit 1; }
+          grep -q "${PLUGIN_NAME}/plugin.info.txt"  /tmp/_ziplist.txt || { echo "::error::Missing plugin.info.txt"; exit 1; }
+          grep -q "${PLUGIN_NAME}/syntax.php"       /tmp/_ziplist.txt || { echo "::error::Missing syntax.php"; exit 1; }
+          grep -q "${PLUGIN_NAME}/action.php"       /tmp/_ziplist.txt || { echo "::error::Missing action.php"; exit 1; }
+          grep -q "${PLUGIN_NAME}/helper.php"       /tmp/_ziplist.txt || { echo "::error::Missing helper.php"; exit 1; }
+          grep -q "${PLUGIN_NAME}/README.md"        /tmp/_ziplist.txt || { echo "::error::Missing README.md"; exit 1; }
+          grep -q "${PLUGIN_NAME}/LICENSE"          /tmp/_ziplist.txt || { echo "::error::Missing LICENSE"; exit 1; }
+
+          echo "ZIP structure verified successfully!"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: ${{ env.TAG_NAME }}
+          body_path: build/CHANGELOG.md
+          files: |
+            ${{ env.ZIP_FILE }}
+            ${{ env.ZIP_FILE }}.sha256
+            build/CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
