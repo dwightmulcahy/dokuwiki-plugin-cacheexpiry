@@ -1,0 +1,30 @@
+name: PR Check
+
+on:
+  pull_request:
+    paths:
+      - "syntax.php"
+      - "tests/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+# Prevent overlapping runs for the same PR
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read       # Required so the action can read repo contents if needed
+  pull-requests: write
+  statuses: write
+
+# ====================================
+# Add tests here to preserve ordering
+# ====================================
+
+jobs:
+  # 1) Validate Conventional Commits (child workflow A)
+  conventional-commits:
+    name: Validate Conventional Commits
+    uses: ./.github/workflows/verify-conventional-commits.yml
+    secrets: inherit
