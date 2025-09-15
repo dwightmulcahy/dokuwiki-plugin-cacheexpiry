@@ -267,6 +267,42 @@ Add CSS (e.g., in your template’s stylesheet):
 }
 ```
 
+### Using pagecss plugin
+
+Using the ''pagecss'' plugin (https://www.dokuwiki.org/plugin:pagecss) allows you to inline the CSS on the page without having to modify or have admin access to the DokuWiki CSS files.
+
+Here is a fun example that makes it look like a GitHub badge
+
+```css
+<pagecss>
+.cacheexpiry-nextrefresh {
+  display: inline-block;
+  padding: 3px 8px;
+  margin: 6px 0;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #fff;                 /* White text */
+  background: #2ea44f;         /* GitHub green badge */
+  border-radius: 999px;        /* Pill shape */
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+  transition: background 0.2s ease;
+}
+
+.cacheexpiry-nextrefresh::before {
+  content: "⏳";
+  margin-right: 6px;
+  font-size: 0.95em;
+  vertical-align: middle;
+}
+
+.cacheexpiry-nextrefresh:hover {
+  background: #22863a;         /* Darker green on hover */
+}
+</pagecss>
+```
+
 ---
 
 ## Debug logging
